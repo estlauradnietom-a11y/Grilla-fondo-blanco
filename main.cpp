@@ -19,8 +19,8 @@
 const unsigned int WIDTH = 800;
 const unsigned int HEIGHT = 800;
 
-const int COLS = 20;   // columnas de la cuadricula
-const int ROWS = 20;   // filas de la cuadricula
+const int COLS = 60;   // columnas de la cuadricula
+const int ROWS = 60;   // filas de la cuadricula
 const float CELL_SIZE = (float)WIDTH / COLS; // tamano de cada celda en pixeles
 
 int main()
