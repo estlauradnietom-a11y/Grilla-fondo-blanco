@@ -12,6 +12,8 @@ public:
 	void Bind();
 	void Unbind();
 	void Delete();
+
+	void UpdateData(GLfloat* vertices, GLsizeiptr size);
 };
 
 #endif

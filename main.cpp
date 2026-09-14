@@ -24,6 +24,11 @@ const int COLS = 60;   // columnas de la cuadricula
 const int ROWS = 60;   // filas de la cuadricula
 const float CELL_SIZE = (float)WIDTH / COLS; // tamano de cada celda en pixeles
 
+
+std::vector<GLfloat> puntosLinea;
+
+
+
 int main()
 {
 
@@ -90,9 +95,36 @@ int main()
 	VBO1.Unbind();
 	EBO1.Unbind();
 
+
+
+	// VAO y VBO para la linea de Bresenham
+
+	VAO VAODibujo;
+
+	float puntoInicial[3] = { 0.0f, 0.0f, 0.0f };
+
+	VBO VBODibujo(puntoInicial, sizeof(puntoInicial));
+
+
+	VAODibujo.Bind();
+
+	VAODibujo.LinkAttrib(
+		VBODibujo,
+		0,
+		3,
+		GL_FLOAT,
+		3 * sizeof(float),
+		(void*)0
+	);
+
+	VAODibujo.Unbind();
+	VBODibujo.Unbind();
+
+
+
+
 	// ---------------- Matriz de proyeccion ortografica ----------------
-	// Mapea coordenadas de pixel (0,0 arriba-izquierda) directamente a la pantalla,
-	// tal como se necesita para una plantilla de dibujo en 2D.
+	// Mapea coordenadas de pixel 
 	glm::mat4 proj = glm::ortho(0.0f, (float)WIDTH, (float)HEIGHT, 0.0f, -1.0f, 1.0f);
 
 
@@ -119,6 +151,10 @@ int main()
 		{
 			if (!dibujando)
 			{
+
+			
+
+
 				// pintar linea
 				dibujando = true;
 
@@ -135,6 +171,7 @@ int main()
 
 			if (dibujando)
 			{
+				puntosLinea.clear();
 
 
 				// Convertir mouse de pixeles a celda
@@ -165,6 +202,17 @@ int main()
 					// Aqui tenemos una celda que Bresenham
 					// determina que pertenece a la linea.
 
+
+					//Guerdar coordenadas
+
+					float pixelX = (x0 + 0.5f) * CELL_SIZE;
+					float pixelY = (y0 + 0.5f) * CELL_SIZE;
+
+					puntosLinea.push_back(pixelX);
+					puntosLinea.push_back(pixelY);
+					puntosLinea.push_back(0.0f);
+
+
 					if (x0 == x1 && y0 == y1)
 						break;
 
@@ -182,8 +230,12 @@ int main()
 						y0 += sy;
 					}
 				}
-			}
 
+				VBODibujo.UpdateData(
+					puntosLinea.data(),
+					puntosLinea.size() * sizeof(GLfloat)
+				);
+			
 
 		}
 
@@ -199,6 +251,19 @@ int main()
 
 		VAO1.Bind();
 		glDrawElements(GL_LINES, (GLsizei)indices.size(), GL_UNSIGNED_INT, 0);
+
+		VAODibujo.Bind();
+
+		glPointSize(5.0f);
+
+		glDrawArrays(
+			GL_POINTS,
+			0,
+			(GLsizei)(puntosLinea.size() / 3)
+		);
+
+		VAODibujo.Unbind();
+
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
