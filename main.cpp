@@ -243,7 +243,20 @@ int main()
     VAODibujo.Unbind();
     VBODibujo.Unbind();
 
+ 
     puntosLinea.clear();
+
+    // Dibujar Círculo (Centro X, Centro Y, Radio, Tamaño de Celda)
+    int centroX = 30;
+    int centroY = 30;
+    int radio = 2;
+
+    drawCircle(centroX, centroY, radio, CELL_SIZE);
+
+    // Opcional: Si quieres mantener también la línea en la misma pantalla, 
+    // puedes dejar la llamada a drawLineH / drawLineV aquí abajo sin borrar los puntos.
+
+    VBODibujo.UpdateData(puntosLinea.data(), puntosLinea.size() * sizeof(GLfloat));
 
     int diferenciaX = abs(finalX - inicioX);
     int diferenciaY = abs(finalY - inicioY);
