@@ -373,6 +373,68 @@ int main()
         glDrawArrays(GL_POINTS, 0, (GLsizei)(puntosLinea.size() / 3));
         VAODibujo.Unbind();
 
+
+
+        while (!glfwWindowShouldClose(window))
+        {
+            glfwPollEvents();
+
+            // 1. Iniciar el frame de ImGui
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
+
+            // 2. Crear la ventana de controles de ImGui
+            ImGui::Begin("Panel de Control - Bresenham");
+            ImGui::Text("Transformaciones y Estilos");
+
+            // Controles deslizantes para mover las figuras
+            ImGui::SliderFloat("Mover X", &offsetFiguraX, -30.0f, 30.0f);
+            ImGui::SliderFloat("Mover Y", &offsetFiguraY, -30.0f, 30.0f);
+
+            // Selector de color para las líneas
+            ImGui::ColorEdit3("Color Linea", colorLinea);
+
+            // Casilla para activar/desactivar relleno
+            ImGui::Checkbox("Rellenar Figuras", &rellenarForma);
+
+            ImGui::End();
+
+            // 3. Renderizado de la escena normal de OpenGL
+            glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            // (Aquí regeneras o actualizas tus puntos sumando offsetFiguraX y offsetFiguraY si es necesario)
+            // ...
+
+            shaderProgram.Activate();
+
+            // Enviar el color seleccionado por ImGui al Shader mediante un Uniform
+            glUniform3f(glGetUniformLocation(shaderProgram.ID, "colorPersonalizado"), colorLinea[0], colorLinea[1], colorLinea[2]);
+
+            // Dibujar grilla y puntos...
+            VAO1.Bind();
+            glDrawElements(GL_LINES, (GLsizei)indices.size(), GL_UNSIGNED_INT, 0);
+
+            VAODibujo.Bind();
+            glPointSize(5.0f);
+            glDrawArrays(GL_POINTS, 0, (GLsizei)(puntosLinea.size() / 3));
+            VAODibujo.Unbind();
+
+            // 4. Renderizar la interfaz de ImGui ENCIMA de OpenGL
+            ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+            glfwSwapBuffers(window);
+        }
+
+
+
+
+
+
+
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
