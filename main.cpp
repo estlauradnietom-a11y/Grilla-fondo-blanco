@@ -224,6 +224,18 @@ int main()
     gladLoadGL();
     glViewport(0, 0, WIDTH, HEIGHT);
 
+
+    // Inicializar ImGui
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGui::StyleColorsDark(); // Tema oscuro predeterminado
+
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
+
+
+
     std::vector<GLfloat> vertices;
     std::vector<GLuint> indices;
 
