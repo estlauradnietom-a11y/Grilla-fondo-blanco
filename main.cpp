@@ -344,10 +344,12 @@ int main()
             drawLine(linX0, linY0, linX1, linY1, CELL_SIZE);
         }
 
-        // Actualizar VBO de dibujo
+        // Actualizar VBO de dibujo de manera segura con OpenGL
         if (!puntosLinea.empty())
         {
-            VBODibujo.UpdateData(puntosLinea.data(), puntosLinea.size() * sizeof(GLfloat));
+            VBODibujo.Bind();
+            glBufferData(GL_ARRAY_BUFFER, puntosLinea.size() * sizeof(GLfloat), puntosLinea.data(), GL_DYNAMIC_DRAW);
+            VBODibujo.Unbind();
         }
 
         // 5. Activar Shader y enviar Uniforms
