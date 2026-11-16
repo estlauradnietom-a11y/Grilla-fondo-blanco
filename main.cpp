@@ -13,6 +13,23 @@
 #include "VBO.h"
 #include "EBO.h"
 
+
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+
+
+
+
+
+// Variables para control interactivo en ImGui
+float offsetFiguraX = 0.0f; // Para mover la figura en X
+float offsetFiguraY = 0.0f; // Para mover la figura en Y
+float colorLinea[3] = { 0.0f, 0.0f, 0.0f }; // Color RGB de las líneas
+bool rellenarForma = false;  // Activador de relleno
+
+
+
 const unsigned int WIDTH = 800;
 const unsigned int HEIGHT = 800;
 
@@ -34,7 +51,7 @@ void guardarPunto(int x, int y, float cellSize)
 }
 
 // =========================================================
-// BRESENHAM HORIZONTAL (Versión para cuando domina X)
+// BRESENHAM HORIZONTAL domina X
 // =========================================================
 void drawLineH(int x0, int y0, int x1, int y1, float cellSize)
 {
@@ -73,7 +90,7 @@ void drawLineH(int x0, int y0, int x1, int y1, float cellSize)
 }
 
 // =========================================================
-// BRESENHAM VERTICAL (Versión para cuando domina Y)
+// BRESENHAM VERTICAL  domina Y
 // =========================================================
 void drawLineV(int x0, int y0, int x1, int y1, float cellSize)
 {
@@ -131,7 +148,7 @@ void drawLine(int x0, int y0, int x1, int y1, float cellSize)
 }
 
 // =========================================================
-// BRESENHAM PARA TRIÁNGULOS (Conecta 3 vértices)
+// BRESENHAM PARA TRIÁNGULOS
 // =========================================================
 void drawTriangle(int x0, int y0, int x1, int y1, int x2, int y2, float cellSize)
 {
@@ -278,7 +295,7 @@ int main()
 
     puntosLinea.clear();
 
-    // Dibujar Círculo (Centro X, Centro Y, Radio, Tamaño de Celda)
+    //""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""  Círculo 
     int centroX = 30;
     int centroY = 30;
     int radio = 2;
