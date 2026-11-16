@@ -1,9 +1,26 @@
-
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31903.59
+# Visual Studio Version 18
+VisualStudioVersion = 18.10.12217.157 stable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "grilla", "grilla.vcxproj", "{042E6141-2440-4CF7-ABB9-B167A619E623}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Imgui", "Imgui", "{ABFF4650-8707-4404-8D39-508B27DDB79B}"
+	ProjectSection(SolutionItems) = preProject
+		Imgui\imgui-master\imgui.cpp = Imgui\imgui-master\imgui.cpp
+		Imgui\imgui-master\imgui.h = Imgui\imgui-master\imgui.h
+		Imgui\imgui-master\imgui_draw.cpp = Imgui\imgui-master\imgui_draw.cpp
+		Imgui\imgui-master\imgui_impl_glfw.cpp = Imgui\imgui-master\imgui_impl_glfw.cpp
+		Imgui\imgui-master\imgui_impl_glfw.h = Imgui\imgui-master\imgui_impl_glfw.h
+		Imgui\imgui-master\imgui_impl_opengl3.cpp = Imgui\imgui-master\imgui_impl_opengl3.cpp
+		Imgui\imgui-master\imgui_impl_opengl3.h = Imgui\imgui-master\imgui_impl_opengl3.h
+		Imgui\imgui-master\imgui_impl_opengl3_loader.h = Imgui\imgui-master\imgui_impl_opengl3_loader.h
+		Imgui\imgui-master\imgui_internal.h = Imgui\imgui-master\imgui_internal.h
+		Imgui\imgui-master\imgui_tables.cpp = Imgui\imgui-master\imgui_tables.cpp
+		Imgui\imgui-master\imgui_widgets.cpp = Imgui\imgui-master\imgui_widgets.cpp
+		Imgui\imgui-master\imstb_rectpack.h = Imgui\imgui-master\imstb_rectpack.h
+		Imgui\imgui-master\imstb_textedit.h = Imgui\imgui-master\imstb_textedit.h
+		Imgui\imgui-master\imstb_truetype.h = Imgui\imgui-master\imstb_truetype.h
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -18,5 +35,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CAA6AA21-95A3-41FF-AEE2-551C5B194414}
 	EndGlobalSection
 EndGlobal

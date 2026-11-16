@@ -13,22 +13,15 @@
 #include "VBO.h"
 #include "EBO.h"
 
-
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
-
-
-
-
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_glfw.h"
+#include "imgui/imgui_impl_opengl3.h"
 
 // Variables para control interactivo en ImGui
-float offsetFiguraX = 0.0f; // Para mover la figura en X
-float offsetFiguraY = 0.0f; // Para mover la figura en Y
-float colorLinea[3] = { 0.0f, 0.0f, 0.0f }; // Color RGB de las líneas
+float offsetFiguraX = 0.0f;
+float offsetFiguraY = 0.0f;
+float colorLinea[3] = { 0.0f, 0.0f, 0.0f }; // Color RGB de las figuras
 bool rellenarForma = false;  // Activador de relleno
-
-
 
 const unsigned int WIDTH = 800;
 const unsigned int HEIGHT = 800;
@@ -51,7 +44,7 @@ void guardarPunto(int x, int y, float cellSize)
 }
 
 // =========================================================
-// BRESENHAM HORIZONTAL domina X
+// BRESENHAM HORIZONTAL (domina X)
 // =========================================================
 void drawLineH(int x0, int y0, int x1, int y1, float cellSize)
 {
@@ -90,7 +83,7 @@ void drawLineH(int x0, int y0, int x1, int y1, float cellSize)
 }
 
 // =========================================================
-// BRESENHAM VERTICAL  domina Y
+// BRESENHAM VERTICAL (domina Y)
 // =========================================================
 void drawLineV(int x0, int y0, int x1, int y1, float cellSize)
 {
@@ -128,9 +121,8 @@ void drawLineV(int x0, int y0, int x1, int y1, float cellSize)
     }
 }
 
-
 // =========================================================
-// FUNCIÓN AUXILIAR DE LÍNEA (Selector automático H/V)
+// FUNCIÓN AUXILIAR DE LÍNEA (Selector H/V)
 // =========================================================
 void drawLine(int x0, int y0, int x1, int y1, float cellSize)
 {
@@ -152,11 +144,8 @@ void drawLine(int x0, int y0, int x1, int y1, float cellSize)
 // =========================================================
 void drawTriangle(int x0, int y0, int x1, int y1, int x2, int y2, float cellSize)
 {
-    // Lado 1: de (x0, y0) a (x1, y1)
     drawLine(x0, y0, x1, y1, cellSize);
-    // Lado 2: de (x1, y1) a (x2, y2)
     drawLine(x1, y1, x2, y2, cellSize);
-    // Lado 3: de (x2, y2) a (x0, y0)
     drawLine(x2, y2, x0, y0, cellSize);
 }
 
@@ -181,7 +170,6 @@ void drawCircle(int cx, int cy, int r, float cellSize)
             p += 2 * x + 1;
         }
 
-        // Simetría de 8 octantes usando guardarPunto
         guardarPunto(cx + x, cy + y, cellSize);
         guardarPunto(cx - x, cy + y, cellSize);
         guardarPunto(cx + x, cy - y, cellSize);
@@ -195,24 +183,27 @@ void drawCircle(int cx, int cy, int r, float cellSize)
     }
 }
 
-
-// ingreso de coordenadas 
-
+// =========================================================
+// PRUEBA DE PUNTO DENTRO DE TRIÁNGULO (Para Relleno)
+// =========================================================
+bool puntoEnTriangulo(int px, int py, int x0, int y0, int x1, int y1, int x2, int y2)
+{
+    int denominador = (y1 - y2) * (x0 - x2) + (x2 - x1) * (y0 - y2);
+    if (denominador == 0) return false;
+    float a = ((y1 - y2) * (px - x2) + (x2 - x1) * (py - y2)) / (float)denominador;
+    float b = ((y2 - y0) * (px - x2) + (x0 - x2) * (py - y2)) / (float)denominador;
+    float c = 1.0f - a - b;
+    return (a >= 0.0f && a <= 1.0f && b >= 0.0f && b <= 1.0f && c >= 0.0f && c <= 1.0f);
+}
 
 int main()
 {
-    int inicioX = 1;
-    int inicioY = 0;
-
-    int finalX = 10;
-    int finalY = 10;
-
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Plantilla de Grilla - Paint", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Grilla Bresenham con ImGui", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Fallo al crear la ventana de GLFW" << std::endl;
@@ -224,18 +215,16 @@ int main()
     gladLoadGL();
     glViewport(0, 0, WIDTH, HEIGHT);
 
-
     // Inicializar ImGui
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
-    ImGui::StyleColorsDark(); // Tema oscuro predeterminado
+    ImGui::StyleColorsDark();
 
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
 
-
-
+    // Generar geometría de la grilla de 60x60
     std::vector<GLfloat> vertices;
     std::vector<GLuint> indices;
 
@@ -248,31 +237,18 @@ int main()
 
             GLuint inicio = (GLuint)(vertices.size() / 6);
 
-            // Vértice 0: Superior izquierda
-            vertices.push_back(x);
-            vertices.push_back(y);
-            vertices.push_back(0.0f);
-            vertices.push_back(0.5f); vertices.push_back(0.5f); vertices.push_back(0.5f);
+            vertices.push_back(x); vertices.push_back(y); vertices.push_back(0.0f);
+            vertices.push_back(0.85f); vertices.push_back(0.85f); vertices.push_back(0.85f); // Gris claro
 
-            // Vértice 1: Superior derecha
-            vertices.push_back(x + CELL_SIZE);
-            vertices.push_back(y);
-            vertices.push_back(0.0f);
-            vertices.push_back(0.5f); vertices.push_back(0.5f); vertices.push_back(0.5f);
+            vertices.push_back(x + CELL_SIZE); vertices.push_back(y); vertices.push_back(0.0f);
+            vertices.push_back(0.85f); vertices.push_back(0.85f); vertices.push_back(0.85f);
 
-            // Vértice 2: Inferior derecha
-            vertices.push_back(x + CELL_SIZE);
-            vertices.push_back(y + CELL_SIZE);
-            vertices.push_back(0.0f);
-            vertices.push_back(0.5f); vertices.push_back(0.5f); vertices.push_back(0.5f);
+            vertices.push_back(x + CELL_SIZE); vertices.push_back(y + CELL_SIZE); vertices.push_back(0.0f);
+            vertices.push_back(0.85f); vertices.push_back(0.85f); vertices.push_back(0.85f);
 
-            // Vértice 3: Inferior izquierda
-            vertices.push_back(x);
-            vertices.push_back(y + CELL_SIZE);
-            vertices.push_back(0.0f);
-            vertices.push_back(0.5f); vertices.push_back(0.5f); vertices.push_back(0.5f);
+            vertices.push_back(x); vertices.push_back(y + CELL_SIZE); vertices.push_back(0.0f);
+            vertices.push_back(0.85f); vertices.push_back(0.85f); vertices.push_back(0.85f);
 
-            // Índices del cuadrado
             indices.push_back(inicio + 0); indices.push_back(inicio + 1);
             indices.push_back(inicio + 1); indices.push_back(inicio + 2);
             indices.push_back(inicio + 2); indices.push_back(inicio + 3);
@@ -284,7 +260,6 @@ int main()
 
     VAO VAO1;
     VAO1.Bind();
-
     VBO VBO1(vertices.data(), vertices.size() * sizeof(GLfloat));
     EBO EBO1(indices.data(), indices.size() * sizeof(GLuint));
 
@@ -295,6 +270,7 @@ int main()
     VBO1.Unbind();
     EBO1.Unbind();
 
+    // VAO para los puntos dibujados
     VAO VAODibujo;
     float puntoInicial[3] = { 0.0f, 0.0f, 0.0f };
     VBO VBODibujo(puntoInicial, sizeof(puntoInicial));
@@ -304,140 +280,111 @@ int main()
     VAODibujo.Unbind();
     VBODibujo.Unbind();
 
-
-    puntosLinea.clear();
-
-    //""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""  Círculo 
-    int centroX = 30;
-    int centroY = 30;
-    int radio = 2;
-
-    drawCircle(centroX, centroY, radio, CELL_SIZE);
-
-
-
-    // """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""" TRIANGULO 
-   
-    int triX0 = 5, triY0 = 30; // Vértice inferior izquierdo
-    int triX1 = 15, triY1 = 20; // Vértice inferior derecho
-    int triX2 = 20, triY2 = 30; // Vértice superior
-
-    drawTriangle(triX0, triY0, triX1, triY1, triX2, triY2, CELL_SIZE);
-
-    // Actualizar los datos en la tarjeta gráfica con todos los puntos acumulados
-    VBODibujo.UpdateData(puntosLinea.data(), puntosLinea.size() * sizeof(GLfloat));
-
-
-
-
-
-    VBODibujo.UpdateData(puntosLinea.data(), puntosLinea.size() * sizeof(GLfloat));
-
-    int diferenciaX = abs(finalX - inicioX);
-    int diferenciaY = abs(finalY - inicioY);
-
-    if (diferenciaX >= diferenciaY)
-    {
-        drawLineH(inicioX, inicioY, finalX, finalY, CELL_SIZE);
-    }
-    else
-    {
-        drawLineV(inicioX, inicioY, finalX, finalY, CELL_SIZE);
-    }
-
-    VBODibujo.UpdateData(puntosLinea.data(), puntosLinea.size() * sizeof(GLfloat));
-
     glm::mat4 proj = glm::ortho(0.0f, (float)WIDTH, (float)HEIGHT, 0.0f, -1.0f, 1.0f);
 
+    // =========================================================
+    // BUCLE PRINCIPAL UNIFICADO
+    // =========================================================
     while (!glfwWindowShouldClose(window))
     {
+        glfwPollEvents();
+
+        // 1. Iniciar frame de ImGui
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        // 2. Crear Panel de Control ImGui
+        ImGui::Begin("Panel de Control - Bresenham");
+        ImGui::Text("Transformaciones y Estilos");
+        ImGui::SliderFloat("Mover X", &offsetFiguraX, -25.0f, 25.0f);
+        ImGui::SliderFloat("Mover Y", &offsetFiguraY, -25.0f, 25.0f);
+        ImGui::ColorEdit3("Color Figuras", colorLinea);
+        ImGui::Checkbox("Rellenar Formas", &rellenarForma);
+        ImGui::End();
+
+        // 3. Limpiar pantalla
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        // 4. Recalcular posiciones de figuras por fotograma según ImGui
+        puntosLinea.clear();
+
+        int centroX = 30 + (int)offsetFiguraX;
+        int centroY = 30 + (int)offsetFiguraY;
+        int radio = 8;
+
+        int triX0 = 10 + (int)offsetFiguraX, triY0 = 20 + (int)offsetFiguraY;
+        int triX1 = 20 + (int)offsetFiguraX, triY1 = 10 + (int)offsetFiguraY;
+        int triX2 = 25 + (int)offsetFiguraX, triY2 = 20 + (int)offsetFiguraY;
+
+        int linX0 = 35 + (int)offsetFiguraX, linY0 = 35 + (int)offsetFiguraY;
+        int linX1 = 50 + (int)offsetFiguraX, linY1 = 50 + (int)offsetFiguraY;
+
+        if (rellenarForma)
+        {
+            for (int r = 0; r < ROWS; r++)
+            {
+                for (int c = 0; c < COLS; c++)
+                {
+                    bool enCirculo = ((c - centroX) * (c - centroX) + (r - centroY) * (r - centroY)) <= (radio * radio);
+                    bool enTriangulo = puntoEnTriangulo(c, r, triX0, triY0, triX1, triY1, triX2, triY2);
+
+                    if (enCirculo || enTriangulo)
+                    {
+                        guardarPunto(c, r, CELL_SIZE);
+                    }
+                }
+            }
+        }
+        else
+        {
+            drawCircle(centroX, centroY, radio, CELL_SIZE);
+            drawTriangle(triX0, triY0, triX1, triY1, triX2, triY2, CELL_SIZE);
+            drawLine(linX0, linY0, linX1, linY1, CELL_SIZE);
+        }
+
+        // Actualizar VBO de dibujo
+        if (!puntosLinea.empty())
+        {
+            VBODibujo.UpdateData(puntosLinea.data(), puntosLinea.size() * sizeof(GLfloat));
+        }
+
+        // 5. Activar Shader y enviar Uniforms
         shaderProgram.Activate();
+        glUniformMatrix4fv(glGetUniformLocation(shaderProgram.ID, "proj"), 1, GL_FALSE, glm::value_ptr(proj));
+        glUniform3f(glGetUniformLocation(shaderProgram.ID, "colorPersonalizado"), colorLinea[0], colorLinea[1], colorLinea[2]);
 
-        glUniformMatrix4fv(
-            glGetUniformLocation(shaderProgram.ID, "proj"),
-            1,
-            GL_FALSE,
-            glm::value_ptr(proj)
-        );
-
-        // Dibujar grilla
+        // 6. Dibujar Grilla
         VAO1.Bind();
         glDrawElements(GL_LINES, (GLsizei)indices.size(), GL_UNSIGNED_INT, 0);
 
-        // Dibujar los puntos de Bresenham
-        VAODibujo.Bind();
-        glPointSize(5.0f);
-        glDrawArrays(GL_POINTS, 0, (GLsizei)(puntosLinea.size() / 3));
-        VAODibujo.Unbind();
-
-
-
-        while (!glfwWindowShouldClose(window))
+        // 7. Dibujar Puntos / Figuras
+        if (!puntosLinea.empty())
         {
-            glfwPollEvents();
-
-            // 1. Iniciar el frame de ImGui
-            ImGui_ImplOpenGL3_NewFrame();
-            ImGui_ImplGlfw_NewFrame();
-            ImGui::NewFrame();
-
-            // 2. Crear la ventana de controles de ImGui
-            ImGui::Begin("Panel de Control - Bresenham");
-            ImGui::Text("Transformaciones y Estilos");
-
-            // Controles deslizantes para mover las figuras
-            ImGui::SliderFloat("Mover X", &offsetFiguraX, -30.0f, 30.0f);
-            ImGui::SliderFloat("Mover Y", &offsetFiguraY, -30.0f, 30.0f);
-
-            // Selector de color para las líneas
-            ImGui::ColorEdit3("Color Linea", colorLinea);
-
-            // Casilla para activar/desactivar relleno
-            ImGui::Checkbox("Rellenar Figuras", &rellenarForma);
-
-            ImGui::End();
-
-            // 3. Renderizado de la escena normal de OpenGL
-            glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT);
-
-            // (Aquí regeneras o actualizas tus puntos sumando offsetFiguraX y offsetFiguraY si es necesario)
-            // ...
-
-            shaderProgram.Activate();
-
-            // Enviar el color seleccionado por ImGui al Shader mediante un Uniform
-            glUniform3f(glGetUniformLocation(shaderProgram.ID, "colorPersonalizado"), colorLinea[0], colorLinea[1], colorLinea[2]);
-
-            // Dibujar grilla y puntos...
-            VAO1.Bind();
-            glDrawElements(GL_LINES, (GLsizei)indices.size(), GL_UNSIGNED_INT, 0);
-
             VAODibujo.Bind();
-            glPointSize(5.0f);
+            glPointSize(6.0f);
             glDrawArrays(GL_POINTS, 0, (GLsizei)(puntosLinea.size() / 3));
             VAODibujo.Unbind();
-
-            // 4. Renderizar la interfaz de ImGui ENCIMA de OpenGL
-            ImGui::Render();
-            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-            glfwSwapBuffers(window);
         }
 
+        // 8. Ajustes de OpenGL para renderizar ImGui correctamente encima
+        glDisable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+        // 9. Renderizar Interfaz ImGui
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-
-
-
-
-
+        // 10. Intercambiar Buffers
         glfwSwapBuffers(window);
-        glfwPollEvents();
     }
+
+    // Limpieza de recursos
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 
     VAO1.Delete();
     VBO1.Delete();
