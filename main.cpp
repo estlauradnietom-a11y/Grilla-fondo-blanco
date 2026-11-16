@@ -111,6 +111,38 @@ void drawLineV(int x0, int y0, int x1, int y1, float cellSize)
     }
 }
 
+
+// =========================================================
+// FUNCIÓN AUXILIAR DE LÍNEA (Selector automático H/V)
+// =========================================================
+void drawLine(int x0, int y0, int x1, int y1, float cellSize)
+{
+    int diferenciaX = abs(x1 - x0);
+    int diferenciaY = abs(y1 - y0);
+
+    if (diferenciaX >= diferenciaY)
+    {
+        drawLineH(x0, y0, x1, y1, cellSize);
+    }
+    else
+    {
+        drawLineV(x0, y0, x1, y1, cellSize);
+    }
+}
+
+// =========================================================
+// BRESENHAM PARA TRIÁNGULOS (Conecta 3 vértices)
+// =========================================================
+void drawTriangle(int x0, int y0, int x1, int y1, int x2, int y2, float cellSize)
+{
+    // Lado 1: de (x0, y0) a (x1, y1)
+    drawLine(x0, y0, x1, y1, cellSize);
+    // Lado 2: de (x1, y1) a (x2, y2)
+    drawLine(x1, y1, x2, y2, cellSize);
+    // Lado 3: de (x2, y2) a (x0, y0)
+    drawLine(x2, y2, x0, y0, cellSize);
+}
+
 // =========================================================
 // BRESENHAM PARA CÍRCULOS
 // =========================================================
@@ -243,7 +275,7 @@ int main()
     VAODibujo.Unbind();
     VBODibujo.Unbind();
 
- 
+
     puntosLinea.clear();
 
     // Dibujar Círculo (Centro X, Centro Y, Radio, Tamaño de Celda)
@@ -253,8 +285,22 @@ int main()
 
     drawCircle(centroX, centroY, radio, CELL_SIZE);
 
-    // Opcional: Si quieres mantener también la línea en la misma pantalla, 
-    // puedes dejar la llamada a drawLineH / drawLineV aquí abajo sin borrar los puntos.
+
+
+    // """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""" TRIANGULO 
+   
+    int triX0 = 5, triY0 = 30; // Vértice inferior izquierdo
+    int triX1 = 15, triY1 = 20; // Vértice inferior derecho
+    int triX2 = 20, triY2 = 30; // Vértice superior
+
+    drawTriangle(triX0, triY0, triX1, triY1, triX2, triY2, CELL_SIZE);
+
+    // Actualizar los datos en la tarjeta gráfica con todos los puntos acumulados
+    VBODibujo.UpdateData(puntosLinea.data(), puntosLinea.size() * sizeof(GLfloat));
+
+
+
+
 
     VBODibujo.UpdateData(puntosLinea.data(), puntosLinea.size() * sizeof(GLfloat));
 
