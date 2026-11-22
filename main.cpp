@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <cstdlib>
+#include <cmath>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -63,6 +64,7 @@ struct Figura
     bool rellenar;               // true = pintar el interior
     int desplazamientoX;         // Celdas que se movio en X (Paso 3)
     int desplazamientoY;         // Celdas que se movio en Y (Paso 3)
+    float angulo;                // Grados de rotacion (Paso 4)
 };
 
 // Lista con todas las figuras del dibujo
@@ -321,17 +323,63 @@ void dibujarBorde(const Figura& f)
 }
 
 // =========================================================
-// PASO 3: TRANSFORMACIONES
+// PASOS 3 Y 4: TRANSFORMACIONES (rotacion + desplazamiento)
 // =========================================================
-// Devuelve una COPIA de la figura con sus puntos ya movidos.
-// La figura original no se modifica: solo guarda cuanto se ha movido.
+const float PI = 3.14159265f;
+
+// Centro de la figura = promedio de sus puntos de referencia.
+// En el circulo es su centro, en la linea su punto medio
+// y en el triangulo su centroide.
+void calcularCentro(const Figura& f, float& cx, float& cy)
+{
+    cx = 0.0f;
+    cy = 0.0f;
+
+    for (int i = 0; i < (int)f.puntos.size(); i++)
+    {
+        cx += (float)f.puntos[i].x;
+        cy += (float)f.puntos[i].y;
+    }
+
+    cx /= (float)f.puntos.size();
+    cy /= (float)f.puntos.size();
+}
+
+// Devuelve una COPIA de la figura con sus puntos ya girados y movidos.
+// La figura original no se modifica: solo guarda su angulo y su desplazamiento.
 // Asi siempre partimos de los puntos originales y la figura no se deforma.
 Figura aplicarTransformaciones(const Figura& f)
 {
     Figura resultado = f;   // copia de la figura
 
+    // Centro sobre el que gira la figura
+    float cx, cy;
+    calcularCentro(f, cx, cy);
+
+    // Las funciones cos y sin trabajan en radianes: grados * PI / 180
+    float theta = f.angulo * PI / 180.0f;
+    float coseno = std::cos(theta);
+    float seno = std::sin(theta);
+
     for (int i = 0; i < (int)resultado.puntos.size(); i++)
     {
+        // 1) ROTACION (Paso 4)
+        // a. Trasladar el punto para que el centro quede en el origen (0, 0)
+        float x = (float)f.puntos[i].x - cx;
+        float y = (float)f.puntos[i].y - cy;
+
+        // b. Formula de rotacion
+        //    x' = x * cos(theta) - y * sen(theta)
+        //    y' = x * sen(theta) + y * cos(theta)
+        float xRotado = x * coseno - y * seno;
+        float yRotado = x * seno + y * coseno;
+
+        // c. Regresar al centro y redondear a la celda mas cercana
+        //    (Bresenham necesita coordenadas enteras)
+        resultado.puntos[i].x = (int)std::round(xRotado + cx);
+        resultado.puntos[i].y = (int)std::round(yRotado + cy);
+
+        // 2) DESPLAZAMIENTO (Paso 3)
         resultado.puntos[i].x += f.desplazamientoX;
         resultado.puntos[i].y += f.desplazamientoY;
     }
@@ -353,7 +401,7 @@ void dibujarFigura(const Figura& f)
 }
 
 // Crea las 3 figuras iniciales (mismas coordenadas que ya tenia el proyecto).
-// desplazamientoX y desplazamientoY no se escriben: empiezan en 0.
+// desplazamientoX, desplazamientoY y angulo no se escriben: empiezan en 0.
 void crearFiguras()
 {
     //                  nombre       tipo       puntos de referencia               radio  color borde              color relleno            rellenar
@@ -517,7 +565,23 @@ int main()
             f.desplazamientoY = 0;
         }
 
-        // 2d. Coordenadas actuales de los puntos de referencia
+        // 2d. Rotacion con seno y coseno (Paso 4)
+        ImGui::SeparatorText("Rotar");
+        if (f.tipo == CIRCULO)
+        {
+            ImGui::TextDisabled("Un circulo se ve igual al rotarlo");
+        }
+        else
+        {
+            ImGui::SliderFloat("Angulo", &f.angulo, -180.0f, 180.0f, "%.0f grados");
+            ImGui::TextDisabled("Angulo + = sentido horario");
+            if (ImGui::Button("Reiniciar angulo"))
+            {
+                f.angulo = 0.0f;
+            }
+        }
+
+        // 2e. Coordenadas actuales de los puntos de referencia
         ImGui::SeparatorText("Puntos de referencia");
         Figura actual = aplicarTransformaciones(f);
         for (int i = 0; i < (int)actual.puntos.size(); i++)
@@ -528,6 +592,9 @@ int main()
         {
             ImGui::Text("Radio: %d", actual.radio);
         }
+        float centroX, centroY;
+        calcularCentro(actual, centroX, centroY);
+        ImGui::Text("Centro de giro: (%.1f, %.1f)", centroX, centroY);
 
         ImGui::End();
 
