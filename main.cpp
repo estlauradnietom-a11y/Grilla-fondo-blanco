@@ -13,6 +13,12 @@
 #include "VBO.h"
 #include "EBO.h"
 
+
+//sin imgui 
+// 
+
+
+
 const unsigned int WIDTH = 800;
 const unsigned int HEIGHT = 800;
 
@@ -33,6 +39,9 @@ void guardarPunto(int x, int y, float cellSize)
     puntosLinea.push_back(0.0f);
 }
 
+
+
+// 
 // =========================================================
 // BRESENHAM HORIZONTAL (Versión para cuando domina X)
 // =========================================================
