@@ -17,30 +17,92 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
-// Variables para control interactivo en ImGui
-float offsetFiguraX = 0.0f;
-float offsetFiguraY = 0.0f;
-float colorLinea[3] = { 0.0f, 0.0f, 0.0f }; // Color RGB de las figuras
-bool rellenarForma = false;  // Activador de relleno
-
 const unsigned int WIDTH = 800;
 const unsigned int HEIGHT = 800;
+
+// Ancho del panel del menu, que va a la derecha de la grilla (Paso 3)
+const unsigned int PANEL_WIDTH = 300;
 
 const int COLS = 60;
 const int ROWS = 60;
 
 const float CELL_SIZE = (float)WIDTH / COLS;
 
-std::vector<GLfloat> puntosLinea;
+// =========================================================
+// PASO 2: CADA FIGURA ES UN OBJETO
+// =========================================================
+
+// Un punto de referencia de la figura, medido en celdas de la grilla
+// (x = columna, y = fila)
+struct Punto
+{
+    int x;
+    int y;
+};
+
+// Los tipos de figura que sabe dibujar el programa
+enum TipoFigura
+{
+    CIRCULO,
+    TRIANGULO,
+    LINEA
+};
+
+// Toda la informacion que necesita una figura para dibujarse
+struct Figura
+{
+    const char* nombre;          // Nombre que se mostrara en el menu
+    TipoFigura tipo;             // Circulo, triangulo o linea
+    std::vector<Punto> puntos;   // Puntos de referencia:
+                                 //   circulo   -> 1 punto (el centro)
+                                 //   triangulo -> 3 puntos (los vertices)
+                                 //   linea     -> 2 puntos (inicio y fin)
+    int radio;                   // Solo lo usa el circulo
+    float colorBorde[3];         // Color RGB del contorno (valores de 0 a 1)
+    float colorRelleno[3];       // Color RGB del interior
+    bool rellenar;               // true = pintar el interior
+    int desplazamientoX;         // Celdas que se movio en X (Paso 3)
+    int desplazamientoY;         // Celdas que se movio en Y (Paso 3)
+};
+
+// Lista con todas las figuras del dibujo
+std::vector<Figura> figuras;
+
+// Posicion en la lista de la figura elegida en el menu (0 = la primera)
+int figuraSeleccionada = 0;
+
+// Puntos (celdas) que se pintan en cada fotograma.
+// Cada punto ocupa 6 numeros: posicion (x, y, z) + color (r, g, b),
+// el mismo formato que usan los vertices de la grilla.
+std::vector<GLfloat> puntosDibujo;
+
+// "Pincel": color con el que guardarPunto pinta en este momento
+float colorActual[3] = { 0.0f, 0.0f, 0.0f };
+
+void usarColor(const float color[3])
+{
+    colorActual[0] = color[0];
+    colorActual[1] = color[1];
+    colorActual[2] = color[2];
+}
 
 void guardarPunto(int x, int y, float cellSize)
 {
+    // Si la celda queda fuera de la grilla no se pinta
+    if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return;
+
     float pixelX = (x + 0.5f) * cellSize;
     float pixelY = (y + 0.5f) * cellSize;
 
-    puntosLinea.push_back(pixelX);
-    puntosLinea.push_back(pixelY);
-    puntosLinea.push_back(0.0f);
+    // Posicion
+    puntosDibujo.push_back(pixelX);
+    puntosDibujo.push_back(pixelY);
+    puntosDibujo.push_back(0.0f);
+
+    // Color (el del pincel actual)
+    puntosDibujo.push_back(colorActual[0]);
+    puntosDibujo.push_back(colorActual[1]);
+    puntosDibujo.push_back(colorActual[2]);
 }
 
 // =========================================================
@@ -196,14 +258,120 @@ bool puntoEnTriangulo(int px, int py, int x0, int y0, int x1, int y1, int x2, in
     return (a >= 0.0f && a <= 1.0f && b >= 0.0f && b <= 1.0f && c >= 0.0f && c <= 1.0f);
 }
 
+// =========================================================
+// PASO 2: DIBUJAR UNA FIGURA (relleno + borde)
+// =========================================================
+
+// Pinta el interior recorriendo todas las celdas de la grilla
+// y preguntando si cada celda esta dentro de la figura
+void rellenarFigura(const Figura& f)
+{
+    if (f.tipo == LINEA) return;   // una linea no tiene interior
+
+    usarColor(f.colorRelleno);
+
+    for (int fila = 0; fila < ROWS; fila++)
+    {
+        for (int columna = 0; columna < COLS; columna++)
+        {
+            bool adentro = false;
+
+            if (f.tipo == CIRCULO)
+            {
+                int dx = columna - f.puntos[0].x;
+                int dy = fila - f.puntos[0].y;
+                adentro = (dx * dx + dy * dy) <= (f.radio * f.radio);
+            }
+            else if (f.tipo == TRIANGULO)
+            {
+                adentro = puntoEnTriangulo(columna, fila,
+                    f.puntos[0].x, f.puntos[0].y,
+                    f.puntos[1].x, f.puntos[1].y,
+                    f.puntos[2].x, f.puntos[2].y);
+            }
+
+            if (adentro)
+            {
+                guardarPunto(columna, fila, CELL_SIZE);
+            }
+        }
+    }
+}
+
+// Dibuja el contorno usando los algoritmos de Bresenham de arriba
+void dibujarBorde(const Figura& f)
+{
+    usarColor(f.colorBorde);
+
+    if (f.tipo == CIRCULO)
+    {
+        drawCircle(f.puntos[0].x, f.puntos[0].y, f.radio, CELL_SIZE);
+    }
+    else if (f.tipo == TRIANGULO)
+    {
+        drawTriangle(f.puntos[0].x, f.puntos[0].y,
+                     f.puntos[1].x, f.puntos[1].y,
+                     f.puntos[2].x, f.puntos[2].y, CELL_SIZE);
+    }
+    else if (f.tipo == LINEA)
+    {
+        drawLine(f.puntos[0].x, f.puntos[0].y,
+                 f.puntos[1].x, f.puntos[1].y, CELL_SIZE);
+    }
+}
+
+// =========================================================
+// PASO 3: TRANSFORMACIONES
+// =========================================================
+// Devuelve una COPIA de la figura con sus puntos ya movidos.
+// La figura original no se modifica: solo guarda cuanto se ha movido.
+// Asi siempre partimos de los puntos originales y la figura no se deforma.
+Figura aplicarTransformaciones(const Figura& f)
+{
+    Figura resultado = f;   // copia de la figura
+
+    for (int i = 0; i < (int)resultado.puntos.size(); i++)
+    {
+        resultado.puntos[i].x += f.desplazamientoX;
+        resultado.puntos[i].y += f.desplazamientoY;
+    }
+
+    return resultado;
+}
+
+// Primero se transforma la figura; luego se pinta el relleno
+// y despues el borde, para que el borde quede encima
+void dibujarFigura(const Figura& f)
+{
+    Figura g = aplicarTransformaciones(f);
+
+    if (g.rellenar)
+    {
+        rellenarFigura(g);
+    }
+    dibujarBorde(g);
+}
+
+// Crea las 3 figuras iniciales (mismas coordenadas que ya tenia el proyecto).
+// desplazamientoX y desplazamientoY no se escriben: empiezan en 0.
+void crearFiguras()
+{
+    //                  nombre       tipo       puntos de referencia               radio  color borde              color relleno            rellenar
+    figuras.push_back({ "Circulo",   CIRCULO,   { {30, 30} },                        8,   { 0.85f, 0.10f, 0.10f }, { 1.00f, 0.65f, 0.65f }, true  });
+    figuras.push_back({ "Triangulo", TRIANGULO, { {10, 20}, {20, 10}, {25, 20} },    0,   { 0.10f, 0.25f, 0.85f }, { 0.60f, 0.75f, 1.00f }, false });
+    figuras.push_back({ "Linea",     LINEA,     { {35, 35}, {50, 50} },              0,   { 0.05f, 0.55f, 0.20f }, { 0.00f, 0.00f, 0.00f }, false });
+}
+
 int main()
 {
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);   // tamano fijo para que el panel no se descuadre
 
-    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Grilla Bresenham con ImGui", NULL, NULL);
+    // La ventana mide: grilla (800) + panel del menu (300) de ancho
+    GLFWwindow* window = glfwCreateWindow(WIDTH + PANEL_WIDTH, HEIGHT, "Grilla Bresenham con ImGui", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Fallo al crear la ventana de GLFW" << std::endl;
@@ -270,17 +438,22 @@ int main()
     VBO1.Unbind();
     EBO1.Unbind();
 
-    // VAO para los puntos dibujados
+    // VAO para los puntos de las figuras: posicion (location 0) + color (location 1),
+    // 6 floats por punto, igual que los vertices de la grilla
     VAO VAODibujo;
-    float puntoInicial[3] = { 0.0f, 0.0f, 0.0f };
+    GLfloat puntoInicial[6] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
     VBO VBODibujo(puntoInicial, sizeof(puntoInicial));
 
     VAODibujo.Bind();
-    VAODibujo.LinkAttrib(VBODibujo, 0, 3, GL_FLOAT, 3 * sizeof(float), (void*)0);
+    VAODibujo.LinkAttrib(VBODibujo, 0, 3, GL_FLOAT, 6 * sizeof(float), (void*)0);
+    VAODibujo.LinkAttrib(VBODibujo, 1, 3, GL_FLOAT, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     VAODibujo.Unbind();
     VBODibujo.Unbind();
 
     glm::mat4 proj = glm::ortho(0.0f, (float)WIDTH, (float)HEIGHT, 0.0f, -1.0f, 1.0f);
+
+    // Crear las figuras del dibujo (Paso 2)
+    crearFiguras();
 
     // =========================================================
     // BUCLE PRINCIPAL UNIFICADO
@@ -294,79 +467,104 @@ int main()
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        // 2. Crear Panel de Control ImGui
-        ImGui::Begin("Panel de Control - Bresenham");
-        ImGui::Text("Transformaciones y Estilos");
-        ImGui::SliderFloat("Mover X", &offsetFiguraX, -25.0f, 25.0f);
-        ImGui::SliderFloat("Mover Y", &offsetFiguraY, -25.0f, 25.0f);
-        ImGui::ColorEdit3("Color Figuras", colorLinea);
-        ImGui::Checkbox("Rellenar Formas", &rellenarForma);
-        ImGui::End();
+        // 2. Panel de ImGui fijo a la derecha de la grilla (Paso 3)
+        ImGui::SetNextWindowPos(ImVec2((float)WIDTH, 0.0f));
+        ImGui::SetNextWindowSize(ImVec2((float)PANEL_WIDTH, (float)HEIGHT));
+        ImGui::Begin("Menu de figuras", NULL,
+            ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
-        // 3. Limpiar pantalla
-        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        // 4. Recalcular posiciones de figuras por fotograma según ImGui
-        puntosLinea.clear();
-
-        int centroX = 30 + (int)offsetFiguraX;
-        int centroY = 30 + (int)offsetFiguraY;
-        int radio = 8;
-
-        int triX0 = 10 + (int)offsetFiguraX, triY0 = 20 + (int)offsetFiguraY;
-        int triX1 = 20 + (int)offsetFiguraX, triY1 = 10 + (int)offsetFiguraY;
-        int triX2 = 25 + (int)offsetFiguraX, triY2 = 20 + (int)offsetFiguraY;
-
-        int linX0 = 35 + (int)offsetFiguraX, linY0 = 35 + (int)offsetFiguraY;
-        int linX1 = 50 + (int)offsetFiguraX, linY1 = 50 + (int)offsetFiguraY;
-
-        if (rellenarForma)
+        // 2a. Menu desplegable para elegir la figura
+        if (ImGui::BeginCombo("Figura", figuras[figuraSeleccionada].nombre))
         {
-            for (int r = 0; r < ROWS; r++)
+            for (int i = 0; i < (int)figuras.size(); i++)
             {
-                for (int c = 0; c < COLS; c++)
+                if (ImGui::Selectable(figuras[i].nombre, i == figuraSeleccionada))
                 {
-                    bool enCirculo = ((c - centroX) * (c - centroX) + (r - centroY) * (r - centroY)) <= (radio * radio);
-                    bool enTriangulo = puntoEnTriangulo(c, r, triX0, triY0, triX1, triY1, triX2, triY2);
-
-                    if (enCirculo || enTriangulo)
-                    {
-                        guardarPunto(c, r, CELL_SIZE);
-                    }
+                    figuraSeleccionada = i;
                 }
+            }
+            ImGui::EndCombo();
+        }
+
+        // "f" es la figura elegida. El & hace que editemos la figura real, no una copia
+        Figura& f = figuras[figuraSeleccionada];
+
+        // 2b. Color y relleno
+        ImGui::SeparatorText("Color");
+        ImGui::ColorEdit3("Borde", f.colorBorde);
+
+        if (f.tipo != LINEA)
+        {
+            ImGui::Checkbox("Rellenar", &f.rellenar);
+            if (f.rellenar)
+            {
+                ImGui::ColorEdit3("Relleno", f.colorRelleno);
             }
         }
         else
         {
-            drawCircle(centroX, centroY, radio, CELL_SIZE);
-            drawTriangle(triX0, triY0, triX1, triY1, triX2, triY2, CELL_SIZE);
-            drawLine(linX0, linY0, linX1, linY1, CELL_SIZE);
+            ImGui::TextDisabled("La linea no tiene relleno");
         }
 
-        // Actualizar VBO de dibujo de manera segura con OpenGL
-        if (!puntosLinea.empty())
+        // 2c. Desplazamiento (en celdas de la grilla)
+        ImGui::SeparatorText("Desplazar");
+        ImGui::SliderInt("Mover X", &f.desplazamientoX, -COLS, COLS);
+        ImGui::SliderInt("Mover Y", &f.desplazamientoY, -ROWS, ROWS);
+        ImGui::TextDisabled("X+ = derecha, Y+ = abajo");
+        if (ImGui::Button("Reiniciar posicion"))
         {
-            VBODibujo.Bind();
-            glBufferData(GL_ARRAY_BUFFER, puntosLinea.size() * sizeof(GLfloat), puntosLinea.data(), GL_DYNAMIC_DRAW);
+            f.desplazamientoX = 0;
+            f.desplazamientoY = 0;
+        }
+
+        // 2d. Coordenadas actuales de los puntos de referencia
+        ImGui::SeparatorText("Puntos de referencia");
+        Figura actual = aplicarTransformaciones(f);
+        for (int i = 0; i < (int)actual.puntos.size(); i++)
+        {
+            ImGui::Text("P%d: (%d, %d)", i + 1, actual.puntos[i].x, actual.puntos[i].y);
+        }
+        if (actual.tipo == CIRCULO)
+        {
+            ImGui::Text("Radio: %d", actual.radio);
+        }
+
+        ImGui::End();
+
+        // 3. Limpiar pantalla y usar solo el cuadro de 800x800 de la izquierda para la grilla
+        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        glViewport(0, 0, WIDTH, HEIGHT);
+
+        // 4. Recalcular los puntos de todas las figuras en cada fotograma
+        puntosDibujo.clear();
+
+        for (int i = 0; i < (int)figuras.size(); i++)
+        {
+            dibujarFigura(figuras[i]);
+        }
+
+        // Enviar los puntos nuevos a la GPU
+        if (!puntosDibujo.empty())
+        {
+            VBODibujo.UpdateData(puntosDibujo.data(), puntosDibujo.size() * sizeof(GLfloat));
             VBODibujo.Unbind();
         }
 
         // 5. Activar Shader y enviar Uniforms
         shaderProgram.Activate();
         glUniformMatrix4fv(glGetUniformLocation(shaderProgram.ID, "proj"), 1, GL_FALSE, glm::value_ptr(proj));
-        glUniform3f(glGetUniformLocation(shaderProgram.ID, "colorPersonalizado"), colorLinea[0], colorLinea[1], colorLinea[2]);
 
         // 6. Dibujar Grilla
         VAO1.Bind();
         glDrawElements(GL_LINES, (GLsizei)indices.size(), GL_UNSIGNED_INT, 0);
 
         // 7. Dibujar Puntos / Figuras
-        if (!puntosLinea.empty())
+        if (!puntosDibujo.empty())
         {
             VAODibujo.Bind();
             glPointSize(6.0f);
-            glDrawArrays(GL_POINTS, 0, (GLsizei)(puntosLinea.size() / 3));
+            glDrawArrays(GL_POINTS, 0, (GLsizei)(puntosDibujo.size() / 6));  // 6 floats por punto
             VAODibujo.Unbind();
         }
 
