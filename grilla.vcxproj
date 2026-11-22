@@ -59,7 +59,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;GLFW_INCLUDE_NONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)ThirdParty\Includes;$(ProjectDir)ThirdParty\Includes\GLFW;$(ProjectDir)ThirdParty\Includes\glad;$(ProjectDir)ThirdParty\Includes\KHR;$(ProjectDir)ThirdParty\Includes\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)ThirdParty\Includes;$(ProjectDir)Imgui;$(ProjectDir)Imgui\backends;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -80,7 +80,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;GLFW_INCLUDE_NONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)ThirdParty\Includes;$(ProjectDir)ThirdParty\Includes\GLFW;$(ProjectDir)ThirdParty\Includes\glad;$(ProjectDir)ThirdParty\Includes\KHR;$(ProjectDir)ThirdParty\Includes\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)ThirdParty\Includes;$(ProjectDir)Imgui;$(ProjectDir)Imgui\backends;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -97,12 +97,12 @@
   <ItemGroup>
     <ClCompile Include="EBO.cpp" />
     <ClCompile Include="Grid.cpp" />
-    <ClCompile Include="Imgui\imgui-master\imgui.cpp" />
-    <ClCompile Include="Imgui\imgui-master\imgui_draw.cpp" />
-    <ClCompile Include="Imgui\imgui-master\imgui_impl_glfw.cpp" />
-    <ClCompile Include="Imgui\imgui-master\imgui_impl_opengl3.cpp" />
-    <ClCompile Include="Imgui\imgui-master\imgui_tables.cpp" />
-    <ClCompile Include="Imgui\imgui-master\imgui_widgets.cpp" />
+    <ClCompile Include="Imgui\imgui.cpp" />
+    <ClCompile Include="Imgui\imgui_draw.cpp" />
+    <ClCompile Include="Imgui\backends\imgui_impl_glfw.cpp" />
+    <ClCompile Include="Imgui\backends\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="Imgui\imgui_tables.cpp" />
+    <ClCompile Include="Imgui\imgui_widgets.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="VAO.cpp" />
@@ -112,14 +112,14 @@
   <ItemGroup>
     <ClInclude Include="EBO.h" />
     <ClInclude Include="Grid.h" />
-    <ClInclude Include="Imgui\imgui-master\imgui.h" />
-    <ClInclude Include="Imgui\imgui-master\imgui_impl_glfw.h" />
-    <ClInclude Include="Imgui\imgui-master\imgui_impl_opengl3.h" />
-    <ClInclude Include="Imgui\imgui-master\imgui_impl_opengl3_loader.h" />
-    <ClInclude Include="Imgui\imgui-master\imgui_internal.h" />
-    <ClInclude Include="Imgui\imgui-master\imstb_rectpack.h" />
-    <ClInclude Include="Imgui\imgui-master\imstb_textedit.h" />
-    <ClInclude Include="Imgui\imgui-master\imstb_truetype.h" />
+    <ClInclude Include="Imgui\imgui.h" />
+    <ClInclude Include="Imgui\backends\imgui_impl_glfw.h" />
+    <ClInclude Include="Imgui\backends\imgui_impl_opengl3.h" />
+    <ClInclude Include="Imgui\backends\imgui_impl_opengl3_loader.h" />
+    <ClInclude Include="Imgui\imgui_internal.h" />
+    <ClInclude Include="Imgui\imstb_rectpack.h" />
+    <ClInclude Include="Imgui\imstb_textedit.h" />
+    <ClInclude Include="Imgui\imstb_truetype.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="VAO.h" />
     <ClInclude Include="VBO.h" />
